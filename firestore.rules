@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Chaque utilisateur authentifié ne lit/écrit que ses propres transactions.
+    match /users/{userId}/transactions/{txId} {
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.keys().hasAll(['title', 'amount', 'category', 'type', 'date'])
+          && request.resource.data.title is string
+          && request.resource.data.amount is number
+          && request.resource.data.category is string
+          && request.resource.data.type is string
+          && request.resource.data.date is timestamp;
+    }
+  }
+}
