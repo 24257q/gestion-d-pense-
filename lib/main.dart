@@ -10,10 +10,15 @@ import 'screens/home_screen.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();git
+  WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ar');
   final cloud = await bootstrapFirebase();
   final transactions = TransactionProvider(firestore: cloud);
+
+
+  print("========== DEBUG ==========");
+  print("Firebase connected? ${cloud != null}");
+  print("===========================");
   await transactions.initialize();
   runApp(
     ChangeNotifierProvider<TransactionProvider>.value(

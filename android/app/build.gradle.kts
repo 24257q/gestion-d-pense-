@@ -10,7 +10,7 @@ plugins {
 android {
     namespace = "com.example.expense_manager"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "25.2.9519653"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -44,4 +44,7 @@ android {
 flutter {
     source = "../.."
 }
-
+dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:34.12.0"))
+    implementation("com.google.firebase:firebase-analytics")
+}

@@ -10,13 +10,15 @@ class FirestoreTransactionRepository {
   cf.CollectionReference<Map<String, dynamic>> get _col {
     final uid = FirebaseAuth.instance.currentUser!.uid;
     return cf.FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
+        // .collection('users')
+        // .doc(uid)
+        // .collection('transactions');
         .collection('transactions');
   }
 
   Map<String, dynamic> _encode(Transaction t) {
     final m = Map<String, dynamic>.from(t.toJson());
+
     m.remove('id');
     m['date'] = cf.Timestamp.fromDate(t.date);
     return m;

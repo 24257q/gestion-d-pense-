@@ -31,20 +31,21 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'REPLACE_WITH_WEB_API_KEY',
-    appId: '1:000000000000:web:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'YOUR_PROJECT_ID',
-    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    apiKey: 'AIzaSyDGZ16gvsbTsO5DNHu3jBThItk5-swwn7E',
+    appId: '1:815200344212:web:5698808d7c690abcfc7c81',
+    messagingSenderId: '815200344212',
+    projectId: 'expense-manager-260cc',
+    authDomain: 'expense-manager-260cc.firebaseapp.com',
+    storageBucket: 'expense-manager-260cc.firebasestorage.app',
+    measurementId: 'G-5G1DR2KMHG',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'REPLACE_WITH_ANDROID_API_KEY',
-    appId: '1:000000000000:android:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    apiKey: 'AIzaSyDUsqzwdfB68MzhEBHVdDIVxx36t8Cht8A',
+    appId: '1:815200344212:android:eaa2ea97edf5d57bfc7c81',
+    messagingSenderId: '815200344212',
+    projectId: 'expense-manager-260cc',
+    storageBucket: 'expense-manager-260cc.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
