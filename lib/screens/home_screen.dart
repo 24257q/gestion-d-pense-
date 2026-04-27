@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
 import '../l10n/app_ar.dart';
 import '../models/transaction.dart';
 import '../models/transaction_type.dart';
 import '../providers/transaction_provider.dart';
 import '../widgets/chart_widget.dart';
 import 'add_transaction_screen.dart';
+import '../l10n/app_strings.dart';
+import '../main.dart';
 
 Future<void> _pushTransactionForm(
   BuildContext context, {
@@ -40,13 +41,23 @@ Future<void> _pushTransactionForm(
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+  String _currencySymbol() {
+    switch (AppStrings.currentLang) {
+      case 'en':
+        return r'$';
+      case 'fr':
+        return '€';
+      default:
+        return r'$'; // أو عملتك المحلية
+    }
+  }
 
-  static final _money = NumberFormat.currency(
-    locale: 'ar',
+  NumberFormat get _money => NumberFormat.currency(
+    locale: AppStrings.currentLang,
     decimalDigits: 2,
-    symbol: r'$',
+    symbol: _currencySymbol(),
   );
-  static final _date = DateFormat.MMMd('ar');
+  DateFormat get _date => DateFormat.MMMd(AppStrings.currentLang);
 
   @override
   Widget build(BuildContext context) {
@@ -56,10 +67,25 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text(AppAr.appTitle),
+        title: Text(AppStrings.appTitle),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
+
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.language),
+            onSelected: (lang) {
+              ExpenseManagerApp.of(context)?.changeLang(lang);
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'ar', child: Text('العربية')),
+              PopupMenuItem(value: 'en', child: Text('English')),
+              PopupMenuItem(value: 'fr', child: Text('Français')),
+            ],
+          ),
+        ],
+
         flexibleSpace: DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -116,7 +142,7 @@ class HomeScreen extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: _SummaryCard(
-                                  label: AppAr.income,
+                                  label: AppStrings.income,
                                   value: _money.format(income),
                                   accent: const Color(0xFF059669),
                                   icon: Icons.trending_up_rounded,
@@ -125,7 +151,7 @@ class HomeScreen extends StatelessWidget {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: _SummaryCard(
-                                  label: AppAr.expenses,
+                                  label: AppStrings.expenses,
                                   value: _money.format(expenses),
                                   accent: const Color(0xFFDC2626),
                                   icon: Icons.trending_down_rounded,
@@ -134,7 +160,7 @@ class HomeScreen extends StatelessWidget {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: _SummaryCard(
-                                  label: AppAr.balance,
+                                  label: AppStrings.balance,
                                   value: _money.format(balance),
                                   accent: const Color(0xFF7C3AED),
                                   icon: Icons.account_balance_wallet_rounded,
@@ -164,7 +190,7 @@ class HomeScreen extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              AppAr.transactions,
+                              AppStrings.transactions,
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
@@ -195,7 +221,7 @@ class HomeScreen extends StatelessWidget {
                   if (list.isEmpty)
                     SliverFillRemaining(
                       hasScrollBody: false,
-                      child: _EmptyState(message: AppAr.emptyTransactions),
+                      child: _EmptyState(message: AppStrings.emptyTransactions),
                     )
                   else
                     SliverPadding(
@@ -261,7 +287,7 @@ class HomeScreen extends StatelessWidget {
                                     subtitle: Padding(
                                       padding: const EdgeInsets.only(top: 4),
                                       child: Text(
-                                        '${t.category} · ${_date.format(t.date)}',
+                                        '${AppStrings.categoryName(t.category)} · ${_date.format(t.date)}',
                                         style: theme.textTheme.bodySmall?.copyWith(
                                           color: scheme.onSurfaceVariant,
                                         ),
@@ -272,7 +298,7 @@ class HomeScreen extends StatelessWidget {
                                       children: [
                                         IconButton.filledTonal(
                                           visualDensity: VisualDensity.compact,
-                                          tooltip: AppAr.editTooltip,
+                                          tooltip: AppStrings.editTooltip,
                                           onPressed: () =>
                                               _pushTransactionForm(
                                             context,
@@ -316,7 +342,7 @@ class HomeScreen extends StatelessWidget {
         elevation: 3,
         onPressed: () => _pushTransactionForm(context),
         icon: const Icon(Icons.add_rounded),
-        label: const Text(AppAr.add),
+        label:  Text(AppStrings.add),
       ),
     );
   }
@@ -351,7 +377,7 @@ class _SyncBanner extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                cloudEnabled ? AppAr.cloudSyncOn : AppAr.cloudSyncOff,
+                cloudEnabled ? AppStrings.cloudSyncOn : AppStrings.cloudSyncOff,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: cloudEnabled
                       ? const Color(0xFF065F46)
