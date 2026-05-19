@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 
-/// Central theme for Expense_manager — teal finance palette, soft surfaces.
+// =============================================================================
+// Module: Theme (UI)
+// Responsabilité: Thèmes clair / sombre Material 3
+// =============================================================================
+
 abstract final class AppTheme {
   static const _seed = Color(0xFF0D9488);
 
-  static ThemeData light() {
+  static ThemeData light() => _build(Brightness.light);
+  static ThemeData dark() => _build(Brightness.dark);
+
+  static ThemeData _build(Brightness brightness) {
     final scheme = ColorScheme.fromSeed(
       seedColor: _seed,
-      brightness: Brightness.light,
-      surface: const Color(0xFFF8FAFC),
+      brightness: brightness,
+      surface: brightness == Brightness.light
+          ? const Color(0xFFF8FAFC)
+          : const Color(0xFF0F172A),
     );
 
     final radius = BorderRadius.circular(16);
@@ -16,8 +25,11 @@ abstract final class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      brightness: brightness,
       colorScheme: scheme,
-      scaffoldBackgroundColor: const Color(0xFFF1F5F9),
+      scaffoldBackgroundColor: brightness == Brightness.light
+          ? const Color(0xFFF1F5F9)
+          : const Color(0xFF020617),
       splashFactory: InkSparkle.splashFactory,
       appBarTheme: AppBarTheme(
         centerTitle: true,
@@ -37,7 +49,9 @@ abstract final class AppTheme {
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.35)),
+          side: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.35),
+          ),
         ),
         clipBehavior: Clip.antiAlias,
       ),
@@ -45,13 +59,23 @@ abstract final class AppTheme {
         style: FilledButton.styleFrom(
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         elevation: 2,
         highlightElevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        elevation: 0,
+        height: 68,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        indicatorColor: scheme.primaryContainer,
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
@@ -74,7 +98,8 @@ abstract final class AppTheme {
         errorBorder: inputBorder.copyWith(
           borderSide: BorderSide(color: scheme.error),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       listTileTheme: ListTileThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

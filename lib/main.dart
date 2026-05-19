@@ -1,50 +1,54 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
+import 'app.dart';
+import 'controllers/budget_controller.dart';
+import 'controllers/locale_controller.dart';
+import 'controllers/theme_controller.dart';
+import 'controllers/transaction_controller.dart';
 import 'firebase/firebase_bootstrap.dart';
-import 'l10n/app_ar.dart';
-import 'providers/transaction_provider.dart';
-import 'screens/home_screen.dart';
-import 'theme/app_theme.dart';
+import 'services/local/local_transaction_repository.dart';
+import 'services/transaction_service.dart';
+
+// =============================================================================
+// Point d’entrée — composition Provider (Controllers) + bootstrap données
+// =============================================================================
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting('ar');
-  final cloud = await bootstrapFirebase();
-  final transactions = TransactionProvider(firestore: cloud);
+  await initializeDateFormatting('fr');
+  await initializeDateFormatting('en');
 
+  final remoteRepo = await bootstrapFirebase();
+  final repository =
+      remoteRepo ?? LocalTransactionRepository();
+  final service = TransactionService(repository);
 
-  print("========== DEBUG ==========");
-  print("Firebase connected? ${cloud != null}");
-  print("===========================");
-  await transactions.initialize();
+  final localeController = LocaleController();
+  final themeController = ThemeController();
+  final budgetController = BudgetController();
+  final transactionController = TransactionController(service);
+
+  await localeController.load();
+  await budgetController.load();
+  await transactionController.initialize();
+
   runApp(
-    ChangeNotifierProvider<TransactionProvider>.value(
-      value: transactions,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<LocaleController>.value(
+          value: localeController,
+        ),
+        ChangeNotifierProvider<ThemeController>.value(value: themeController),
+        ChangeNotifierProvider<BudgetController>.value(
+          value: budgetController,
+        ),
+        ChangeNotifierProvider<TransactionController>.value(
+          value: transactionController,
+        ),
+      ],
       child: const ExpenseManagerApp(),
     ),
   );
-}
-
-class ExpenseManagerApp extends StatelessWidget {
-  const ExpenseManagerApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: AppAr.appTitle,
-      debugShowCheckedModeBanner: false,
-      locale: const Locale('ar'),
-      supportedLocales: const [Locale('ar')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      theme: AppTheme.light(),
-      home: const HomeScreen(),
-    );
-  }
 }

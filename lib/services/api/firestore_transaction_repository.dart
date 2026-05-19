@@ -1,26 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as cf;
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../models/transaction.dart';
+import '../../models/transaction.dart';
+import '../repository/transaction_repository.dart';
 
-/// Persistance cloud : `users/{uid}/transactions/{transactionId}`.
-class FirestoreTransactionRepository {
-  FirestoreTransactionRepository();
+// =============================================================================
+// Module: Firestore API Service
+// Responsabilité: CRUD distant — collection `transactions`
+// =============================================================================
+
+class FirestoreTransactionRepository implements TransactionRepository {
+  @override
+  bool get isRemote => true;
 
   cf.CollectionReference<Map<String, dynamic>> get _col {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-    return cf.FirebaseFirestore.instance
-        // .collection('users')
-        // .doc(uid)
-        // .collection('transactions');
-        .collection('transactions');
+    return cf.FirebaseFirestore.instance.collection('transactions');
   }
 
   Map<String, dynamic> _encode(Transaction t) {
     final m = Map<String, dynamic>.from(t.toJson());
-
     m.remove('id');
     m['date'] = cf.Timestamp.fromDate(t.date);
+    m['userId'] = FirebaseAuth.instance.currentUser?.uid;
     return m;
   }
 
@@ -34,23 +35,27 @@ class FirestoreTransactionRepository {
     return Transaction.fromJson(data);
   }
 
-  Stream<List<Transaction>> watchTransactions() {
+  @override
+  Stream<List<Transaction>> watchAll() {
     return _col
         .orderBy('date', descending: true)
         .snapshots()
         .map((snap) => snap.docs.map(_decode).toList());
   }
 
+  @override
+  Future<List<Transaction>> fetchAll() async {
+    final snap = await _col.orderBy('date', descending: true).get();
+    return snap.docs.map(_decode).toList();
+  }
+
+  @override
   Future<void> upsert(Transaction t) async {
     await _col.doc(t.id).set(_encode(t));
   }
 
+  @override
   Future<void> delete(String id) async {
     await _col.doc(id).delete();
-  }
-
-  Future<List<Transaction>> fetchOnce() async {
-    final snap = await _col.orderBy('date', descending: true).get();
-    return snap.docs.map(_decode).toList();
   }
 }
