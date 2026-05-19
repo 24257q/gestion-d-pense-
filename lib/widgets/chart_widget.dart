@@ -1,6 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-
+import '../l10n/app_strings.dart';
 import '../l10n/app_ar.dart';
 
 /// Pie chart of **expense** totals by category using [fl_chart].
@@ -53,7 +53,7 @@ class ExpenseCategoryChart extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
-                    AppAr.chartPlaceholder,
+                    AppStrings.chartPlaceholder,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: scheme.onSurfaceVariant,
@@ -106,7 +106,7 @@ class ExpenseCategoryChart extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      AppAr.expensesByCategory,
+                      AppStrings.expensesByCategory,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -180,7 +180,7 @@ class ExpenseCategoryChart extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      entries[i].key,
+                                      AppStrings.categoryName(entries[i].key),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: theme.textTheme.bodySmall

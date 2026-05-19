@@ -1,9 +1,8 @@
 import 'dart:ui' as ui;
-
+import '../l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
 import '../l10n/app_ar.dart';
 import '../models/category.dart';
 import '../models/transaction.dart';
@@ -29,7 +28,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   late String _category;
   DateTime _date = DateTime.now();
 
-  static final _dateFormat = DateFormat.yMMMd('ar');
+  DateFormat get _dateFormat => DateFormat.yMMMd(AppStrings.currentLang);
 
   bool get _isEditing => widget.initial != null;
 
@@ -83,7 +82,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       initialDate: _date,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
-      locale: const Locale('ar'),
+      locale: Locale(AppStrings.currentLang),
     );
     if (picked != null) {
       setState(() => _date = picked);
@@ -126,7 +125,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? AppAr.editTransaction : AppAr.addTransaction),
+        title: Text(_isEditing ? AppStrings.editTransaction : AppStrings.addTransaction),
       ),
       body: DecoratedBox(
         decoration: BoxDecoration(
@@ -145,7 +144,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
             children: [
               Text(
-                _isEditing ? AppAr.editScreenSubtitle : AppAr.addScreenSubtitle,
+                _isEditing ? AppStrings.editScreenSubtitle : AppStrings.addScreenSubtitle,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: scheme.onSurfaceVariant,
                   height: 1.35,
@@ -168,12 +167,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     segments: [
                       ButtonSegment<TransactionType>(
                         value: TransactionType.income,
-                        label: const Text(AppAr.incomeType),
+                        label:  Text(AppStrings.incomeType),
                         icon: const Icon(Icons.trending_up_rounded, size: 20),
                       ),
                       ButtonSegment<TransactionType>(
                         value: TransactionType.expense,
-                        label: const Text(AppAr.expenseType),
+                        label:  Text(AppStrings.expenseType),
                         icon: const Icon(Icons.trending_down_rounded, size: 20),
                       ),
                     ],
@@ -210,7 +209,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            AppAr.detailsSection,
+                            AppStrings.detailsSection,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -221,9 +220,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       TextFormField(
                         controller: _titleController,
                         textCapitalization: TextCapitalization.sentences,
-                        decoration: const InputDecoration(
-                          labelText: AppAr.titleOptional,
-                          hintText: AppAr.titleHint,
+                        decoration:  InputDecoration(
+                          labelText: AppStrings.titleOptional,
+                          hintText: AppStrings.titleHint,
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -234,18 +233,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
-                          decoration: const InputDecoration(
-                            labelText: AppAr.amount,
-                            hintText: AppAr.amountHint,
+                          decoration:  InputDecoration(
+                            labelText: AppStrings.amount,
+                            hintText: AppStrings.amountHint,
                             suffixText: r' $',
                           ),
                           validator: (value) {
                             final raw =
                                 value?.replaceAll(',', '.').trim() ?? '';
-                            if (raw.isEmpty) return AppAr.enterAmount;
+                            if (raw.isEmpty) return AppStrings.enterAmount;
                             final n = double.tryParse(raw);
                             if (n == null || n <= 0) {
-                              return AppAr.enterValidAmount;
+                              return AppStrings.enterValidAmount;
                             }
                             return null;
                           },
@@ -253,8 +252,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       ),
                       const SizedBox(height: 14),
                       InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: AppAr.category,
+                        decoration:  InputDecoration(
+                          labelText: AppStrings.category,
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
@@ -265,7 +264,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                               for (final c in categories)
                                 DropdownMenuItem(
                                   value: c,
-                                  child: Text(c),
+                                  child: Text(AppStrings.categoryName(c)),
                                 ),
                             ],
                             onChanged: (v) {
@@ -281,7 +280,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                           Icons.event_rounded,
                           color: scheme.primary,
                         ),
-                        title: const Text(AppAr.date),
+                        title:  Text(AppStrings.date),
                         subtitle: Text(
                           _dateFormat.format(_date),
                           style: theme.textTheme.titleSmall?.copyWith(
@@ -290,7 +289,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         ),
                         trailing: IconButton.filledTonal(
                           onPressed: _pickDate,
-                          tooltip: AppAr.pickDateTooltip,
+                          tooltip: AppStrings.pickDateTooltip,
                           icon: const Icon(Icons.calendar_month_rounded),
                         ),
                       ),
@@ -303,7 +302,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 onPressed: _submit,
                 icon: const Icon(Icons.check_rounded),
                 label: Text(
-                  _isEditing ? AppAr.updateTransaction : AppAr.saveTransaction,
+                  _isEditing ? AppStrings.updateTransaction : AppStrings.saveTransaction,
                 ),
               ),
             ],
