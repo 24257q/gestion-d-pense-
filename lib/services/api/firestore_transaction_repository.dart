@@ -14,7 +14,14 @@ class FirestoreTransactionRepository implements TransactionRepository {
   bool get isRemote => true;
 
   cf.CollectionReference<Map<String, dynamic>> get _col {
-    return cf.FirebaseFirestore.instance.collection('transactions');
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      throw StateError('Firebase user must be logged in to access Firestore.');
+    }
+    return cf.FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('transactions');
   }
 
   Map<String, dynamic> _encode(Transaction t) {

@@ -23,10 +23,6 @@ Future<TransactionRepository?> bootstrapFirebase() async {
       await auth.setPersistence(Persistence.LOCAL);
     }
 
-    if (auth.currentUser == null) {
-      await auth.signInAnonymously();
-    }
-
     debugPrint('Firebase OK — uid: ${auth.currentUser?.uid}');
     return FirestoreTransactionRepository();
   } catch (e, st) {

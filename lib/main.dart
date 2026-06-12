@@ -6,9 +6,13 @@ import 'package:provider/provider.dart';
 import 'l10n/app_strings.dart';
 import 'firebase/firebase_bootstrap.dart';
 import 'l10n/app_ar.dart';
-import 'providers/transaction_provider.dart';
+import 'controllers/transaction_controller.dart';
 import 'screens/home_screen.dart';
-import 'theme/app_theme.dart';
+import 'screens/login_screen.dart';
+import 'core/theme/app_theme.dart';
+import 'services/local/local_transaction_repository.dart';
+import 'services/transaction_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +22,9 @@ Future<void> main() async {
   await initializeDateFormatting('fr');
 
   final cloud = await bootstrapFirebase();
-  final transactions = TransactionProvider(firestore: cloud);
+  final repo = cloud ?? LocalTransactionRepository();
+  final service = TransactionService(repo);
+  final transactions = TransactionController(service);
 
   print("========== DEBUG ==========");
   print("Firebase connected? ${cloud != null}");
@@ -27,7 +33,7 @@ Future<void> main() async {
   await transactions.initialize();
 
   runApp(
-    ChangeNotifierProvider<TransactionProvider>.value(
+    ChangeNotifierProvider<TransactionController>.value(
       value: transactions,
       child: const ExpenseManagerApp(),
     ),
@@ -76,7 +82,20 @@ class _ExpenseManagerAppState extends State<ExpenseManagerApp> {
       ],
 
       theme: AppTheme.light(),
-      home: const HomeScreen(),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasData && snapshot.data != null) {
+            return const HomeScreen();
+          }
+          return const LoginScreen();
+        },
+      ),
     );
   }
 }

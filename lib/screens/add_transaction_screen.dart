@@ -3,11 +3,12 @@ import '../l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../l10n/app_ar.dart';
 import '../models/category.dart';
 import '../models/transaction.dart';
 import '../models/transaction_type.dart';
-import '../providers/transaction_provider.dart';
+import '../controllers/transaction_controller.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({super.key, this.initial});
@@ -40,8 +41,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   List<String> _categoryOptions() {
     final base = List<String>.from(CategoryCatalog.forType(_type));
     final i = widget.initial;
-    if (i != null && i.type == _type && !base.contains(i.category)) {
-      base.insert(0, i.category);
+    if (i != null && i.type == _type && !base.contains(i.categoryKey)) {
+      base.insert(0, i.categoryKey);
     }
     return base;
   }
@@ -52,7 +53,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final i = widget.initial;
     if (i != null) {
       _type = i.type;
-      _category = i.category;
+      _category = i.categoryKey;
       _titleController.text = i.title;
       _amountController.text = _formatAmountForField(i.amount);
       _date = DateTime(i.date.year, i.date.month, i.date.day);
@@ -101,20 +102,90 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       id: widget.initial?.id,
       title: _titleController.text.trim(),
       amount: amount,
-      category: _category,
+      categoryKey: _category,
       type: _type,
       date: _date,
     );
 
     if (!mounted) return;
-    final provider = context.read<TransactionProvider>();
-    if (_isEditing) {
-      await provider.update(transaction);
-    } else {
-      await provider.add(transaction);
+    final provider = context.read<TransactionController>();
+
+    // 1. Authentication Check before insert
+    if (provider.cloudSyncEnabled) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppStrings.currentLang == 'fr'
+                  ? 'Erreur : Utilisateur non authentifié. Veuillez patienter ou vous connecter.'
+                  : 'Error: User not authenticated. Please wait or sign in.',
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+        return;
+      }
     }
-    if (!mounted) return;
-    Navigator.of(context).pop();
+
+    // Capture the navigator and messenger before eagerly popping
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Eagerly pop the screen so the user doesn't wait for network
+    navigator.pop();
+
+    // Show optimistic success immediately
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          _isEditing 
+              ? (AppStrings.currentLang == 'fr' ? 'Transaction mise à jour avec succès !' : 'Transaction updated successfully!')
+              : (AppStrings.currentLang == 'fr' ? 'Transaction enregistrée avec succès !' : 'Transaction saved successfully!'),
+        ),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    // Perform the heavy Firebase operation outside the UI blocking flow
+    try {
+      if (_isEditing) {
+        await provider.update(transaction);
+      } else {
+        await provider.add(transaction);
+      }
+    } on FirebaseException catch (fe) {
+      // 2. Specific Cloud Firestore Permission-Denied Handling
+      String errorMsg = AppStrings.currentLang == 'fr'
+          ? 'Erreur Firebase : ${fe.message}'
+          : 'Firebase Error: ${fe.message}';
+          
+      if (fe.code == 'permission-denied') {
+        errorMsg = AppStrings.currentLang == 'fr'
+            ? 'Accès refusé par Firestore : Vérifiez que les règles de sécurité de la console Firebase autorisent l\'écriture.'
+            : 'Access denied by Firestore: Verify that the Security Rules in the Firebase Console allow writes.';
+      }
+      
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: colorScheme.error,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            AppStrings.currentLang == 'fr' 
+                ? 'Erreur lors de l\'enregistrement : $e' 
+                : 'Error saving transaction: $e',
+          ),
+          backgroundColor: colorScheme.error,
+        ),
+      );
+    }
   }
 
   @override

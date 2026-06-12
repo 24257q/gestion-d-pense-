@@ -1,56 +1,75 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // =============================================================================
 // Module: Theme (UI)
-// Responsabilité: Thèmes clair / sombre Material 3
+// Responsabilité: Thèmes clair / sombre professionnels Material 3
 // =============================================================================
 
 abstract final class AppTheme {
-  static const _seed = Color(0xFF0D9488);
+  // Premium Finance App Primary Colors
+  static const _seedLight = Color(0xFF2563EB); // Royal Blue
+  static const _seedDark = Color(0xFF3B82F6);  // Lighter Blue for Dark Mode
+  
+  static const incomeColor = Color(0xFF10B981); // Emerald Green
+  static const expenseColor = Color(0xFFEF4444); // Red
 
   static ThemeData light() => _build(Brightness.light);
   static ThemeData dark() => _build(Brightness.dark);
 
   static ThemeData _build(Brightness brightness) {
+    final isLight = brightness == Brightness.light;
+    final seed = isLight ? _seedLight : _seedDark;
+
     final scheme = ColorScheme.fromSeed(
-      seedColor: _seed,
+      seedColor: seed,
       brightness: brightness,
-      surface: brightness == Brightness.light
-          ? const Color(0xFFF8FAFC)
-          : const Color(0xFF0F172A),
+      primary: seed,
+      surface: isLight ? const Color(0xFFFFFFFF) : const Color(0xFF1E293B), // White / Slate 800
+      surfaceContainerHighest: isLight ? const Color(0xFFF1F5F9) : const Color(0xFF334155),
+      onSurface: isLight ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
     );
 
     final radius = BorderRadius.circular(16);
-    final inputBorder = OutlineInputBorder(borderRadius: radius);
+    final inputBorder = OutlineInputBorder(
+      borderRadius: radius,
+      borderSide: BorderSide(color: scheme.outlineVariant),
+    );
+
+    // Apply Google Fonts (Outfit or Inter are great for finance apps)
+    final textTheme = GoogleFonts.outfitTextTheme(
+      ThemeData(brightness: brightness).textTheme,
+    );
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: scheme,
-      scaffoldBackgroundColor: brightness == Brightness.light
-          ? const Color(0xFFF1F5F9)
-          : const Color(0xFF020617),
+      textTheme: textTheme,
+      scaffoldBackgroundColor: isLight ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
       splashFactory: InkSparkle.splashFactory,
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
-        scrolledUnderElevation: 0.5,
-        backgroundColor: scheme.surface,
+        scrolledUnderElevation: 0,
+        backgroundColor: isLight ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
         foregroundColor: scheme.onSurface,
-        titleTextStyle: TextStyle(
-          fontSize: 18,
+        titleTextStyle: GoogleFonts.outfit(
+          fontSize: 20,
           fontWeight: FontWeight.w600,
           color: scheme.onSurface,
         ),
+        iconTheme: IconThemeData(color: scheme.onSurface),
       ),
       cardTheme: CardThemeData(
-        elevation: 0,
-        color: scheme.surfaceContainerLowest,
+        elevation: isLight ? 4 : 0,
+        shadowColor: isLight ? Colors.black.withValues(alpha: 0.05) : Colors.transparent,
+        color: scheme.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           side: BorderSide(
-            color: scheme.outlineVariant.withValues(alpha: 0.35),
+            color: isLight ? Colors.transparent : scheme.outlineVariant.withValues(alpha: 0.3),
           ),
         ),
         clipBehavior: Clip.antiAlias,
@@ -58,24 +77,36 @@ abstract final class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: GoogleFonts.outfit(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
           ),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        elevation: 2,
-        highlightElevation: 4,
+        elevation: 4,
+        highlightElevation: 8,
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         elevation: 0,
-        height: 68,
+        height: 72,
+        backgroundColor: scheme.surface,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         indicatorColor: scheme.primaryContainer,
+        labelTextStyle: WidgetStatePropertyAll(
+          GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w500),
+        ),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
@@ -87,10 +118,10 @@ abstract final class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        fillColor: isLight ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B),
         border: inputBorder,
         enabledBorder: inputBorder.copyWith(
-          borderSide: BorderSide(color: scheme.outlineVariant),
+          borderSide: const BorderSide(color: Colors.transparent),
         ),
         focusedBorder: inputBorder.copyWith(
           borderSide: BorderSide(color: scheme.primary, width: 2),
@@ -98,17 +129,14 @@ abstract final class AppTheme {
         errorBorder: inputBorder.copyWith(
           borderSide: BorderSide(color: scheme.error),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        labelStyle: GoogleFonts.outfit(
+          color: isLight ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+        ),
       ),
       listTileTheme: ListTileThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        contentPadding: const EdgeInsetsDirectional.only(
-          start: 16,
-          end: 12,
-          top: 8,
-          bottom: 8,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
     );
   }

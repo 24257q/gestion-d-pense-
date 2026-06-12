@@ -6,10 +6,11 @@ import '../models/load_status.dart';
 import '../models/transaction.dart';
 import '../models/transaction_type.dart';
 import '../services/transaction_service.dart';
+import '../services/pdf_export_service.dart';
 
 // =============================================================================
 // Module: Transaction Controller (MVC — Controller / Provider)
-// Responsabilité: Logique métier CRUD, filtres, agrégations
+// Responsabilité: Logique métier CRUD, filtres, agrégations, Export
 // =============================================================================
 
 class TransactionController extends ChangeNotifier {
@@ -23,6 +24,8 @@ class TransactionController extends ChangeNotifier {
   String? _errorMessage;
   String _searchQuery = '';
   TransactionType? _typeFilter;
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   bool get cloudSyncEnabled => _service.isCloud;
   LoadStatus get status => _status;
@@ -30,6 +33,8 @@ class TransactionController extends ChangeNotifier {
   bool get isLoading => _status == LoadStatus.loading;
   String get searchQuery => _searchQuery;
   TransactionType? get typeFilter => _typeFilter;
+  DateTime? get startDate => _startDate;
+  DateTime? get endDate => _endDate;
 
   int get totalCount => _items.length;
 
@@ -39,6 +44,16 @@ class TransactionController extends ChangeNotifier {
 
     if (_typeFilter != null) {
       list = list.where((t) => t.type == _typeFilter).toList();
+    }
+
+    if (_startDate != null) {
+      final start = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+      list = list.where((t) => !t.date.isBefore(start)).toList();
+    }
+
+    if (_endDate != null) {
+      final end = DateTime(_endDate!.year, _endDate!.month, _endDate!.day, 23, 59, 59);
+      list = list.where((t) => !t.date.isAfter(end)).toList();
     }
 
     final q = _searchQuery.trim().toLowerCase();
@@ -94,6 +109,23 @@ class TransactionController extends ChangeNotifier {
       );
     }
     return map;
+  }
+
+  /// Returns expenses for the last 7 days, ordered from oldest (index 0) to today (index 6).
+  List<double> get weeklyExpenses {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final List<double> weekly = List.filled(7, 0.0);
+
+    for (final t in _items.where((x) => x.type == TransactionType.expense)) {
+      final tDate = DateTime(t.date.year, t.date.month, t.date.day);
+      final difference = today.difference(tDate).inDays;
+      if (difference >= 0 && difference < 7) {
+        // Index 6 is today, 5 is yesterday, ..., 0 is 6 days ago
+        weekly[6 - difference] += t.amount;
+      }
+    }
+    return weekly;
   }
 
   String? get topExpenseCategoryKey {
@@ -162,6 +194,16 @@ class TransactionController extends ChangeNotifier {
   void setTypeFilter(TransactionType? type) {
     _typeFilter = type;
     notifyListeners();
+  }
+
+  void setDateRange(DateTime? start, DateTime? end) {
+    _startDate = start;
+    _endDate = end;
+    notifyListeners();
+  }
+
+  Future<void> exportToPdf() async {
+    await PdfExportService.exportTransactions(transactions, balance);
   }
 
   Future<void> add(Transaction transaction) async {

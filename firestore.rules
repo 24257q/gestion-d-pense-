@@ -1,17 +1,36 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Chaque utilisateur authentifié ne lit/écrit que ses propres transactions.
+    
+    // ==========================================
+    // SECURE PRODUCTION-READY RULES
+    // ==========================================
     match /users/{userId}/transactions/{txId} {
+      // 1. Read & Delete permissions: User must be authenticated and only access their own data.
       allow read, delete: if request.auth != null && request.auth.uid == userId;
-      allow create, update: if request.auth != null
+      
+      // 2. Create & Update permissions: Strict schema validation.
+      allow create, update: if request.auth != null 
           && request.auth.uid == userId
-          && request.resource.data.keys().hasAll(['title', 'amount', 'category', 'type', 'date'])
+          // Ensure the stored userId inside the document matches the authenticated user's UID
+          && request.resource.data.userId == request.auth.uid
+          // Schema Validation: Ensure all necessary fields are present with correct types
           && request.resource.data.title is string
           && request.resource.data.amount is number
+          && request.resource.data.amount > 0
           && request.resource.data.category is string
           && request.resource.data.type is string
+          && (request.resource.data.type == 'income' || request.resource.data.type == 'expense')
           && request.resource.data.date is timestamp;
     }
+
+    // ==========================================
+    // TEMPORARY DEVELOPMENT/TESTING RULES
+    // (Uncomment this section and comment out the above if you need to isolate schema errors)
+    // ==========================================
+    // match /users/{userId}/transactions/{txId} {
+    //   allow read, write: if request.auth != null && request.auth.uid == userId;
+    // }
   }
 }
+

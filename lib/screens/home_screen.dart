@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import '../l10n/app_ar.dart';
 import '../models/transaction.dart';
 import '../models/transaction_type.dart';
-import '../providers/transaction_provider.dart';
-import '../widgets/chart_widget.dart';
+import '../controllers/transaction_controller.dart';
+import '../widgets/dashboard_charts.dart';
+import '../widgets/balance_card.dart';
+import '../widgets/transaction_tile.dart';
 import 'add_transaction_screen.dart';
 import '../l10n/app_strings.dart';
 import '../main.dart';
@@ -99,7 +101,7 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: Consumer<TransactionProvider>(
+      body: Consumer<TransactionController>(
         builder: (context, provider, _) {
           final income = provider.totalIncome;
           final expenses = provider.totalExpenses;
@@ -120,7 +122,7 @@ class HomeScreen extends StatelessWidget {
             ),
             child: RefreshIndicator(
               color: scheme.primary,
-              onRefresh: () => provider.load(),
+              onRefresh: () => provider.refresh(),
               edgeOffset: kToolbarHeight + MediaQuery.paddingOf(context).top,
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -138,82 +140,123 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           _SyncBanner(cloudEnabled: provider.cloudSyncEnabled),
                           const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _SummaryCard(
-                                  label: AppStrings.income,
-                                  value: _money.format(income),
-                                  accent: const Color(0xFF059669),
-                                  icon: Icons.trending_up_rounded,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _SummaryCard(
-                                  label: AppStrings.expenses,
-                                  value: _money.format(expenses),
-                                  accent: const Color(0xFFDC2626),
-                                  icon: Icons.trending_down_rounded,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _SummaryCard(
-                                  label: AppStrings.balance,
-                                  value: _money.format(balance),
-                                  accent: const Color(0xFF7C3AED),
-                                  icon: Icons.account_balance_wallet_rounded,
-                                ),
-                              ),
-                            ],
+                          BalanceCard(
+                            income: income,
+                            expenses: expenses,
+                            balance: balance,
+                            currencyFormat: _money.format,
+                            incomeLabel: AppStrings.income,
+                            expensesLabel: AppStrings.expenses,
+                            balanceLabel: AppStrings.balance,
                           ),
                         ],
                       ),
                     ),
                   ),
                   SliverToBoxAdapter(
-                    child: ExpenseCategoryChart(
-                      data: provider.expensesByCategory,
+                    child: DashboardCharts(
+                      pieData: provider.expensesByCategoryKey,
+                      weeklyData: provider.weeklyExpenses,
                     ),
                   ),
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
-                      child: Row(
+                      child: Column(
                         children: [
-                          Icon(
-                            Icons.receipt_long_rounded,
-                            size: 22,
-                            color: scheme.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              AppStrings.transactions,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.receipt_long_rounded,
+                                size: 22,
+                                color: scheme.primary,
                               ),
-                            ),
-                          ),
-                          if (list.isNotEmpty)
-                            Material(
-                              color: scheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(20),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
+                              const SizedBox(width: 8),
+                              Expanded(
                                 child: Text(
-                                  '${list.length}',
-                                  style: theme.textTheme.labelLarge?.copyWith(
-                                    color: scheme.onPrimaryContainer,
-                                    fontWeight: FontWeight.bold,
+                                  AppStrings.transactions,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
-                            ),
+                              if (list.isNotEmpty)
+                                Material(
+                                  color: scheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    child: Text(
+                                      '${list.length}',
+                                      style: theme.textTheme.labelLarge?.copyWith(
+                                        color: scheme.onPrimaryContainer,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(width: 8),
+                              IconButton.filledTonal(
+                                visualDensity: VisualDensity.compact,
+                                icon: const Icon(Icons.picture_as_pdf_rounded, size: 20),
+                                onPressed: list.isEmpty ? null : () => provider.exportToPdf(),
+                                tooltip: AppStrings.currentLang == 'fr' ? 'Exporter PDF' : 'Export PDF',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  onChanged: provider.setSearchQuery,
+                                  decoration: InputDecoration(
+                                    hintText: AppStrings.currentLang == 'fr' ? 'Rechercher...' : 'Search...',
+                                    prefixIcon: const Icon(Icons.search_rounded),
+                                    filled: true,
+                                    fillColor: scheme.surface,
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide(
+                                        color: scheme.outlineVariant.withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      borderSide: BorderSide(
+                                        color: scheme.primary,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              IconButton.filledTonal(
+                                icon: Icon(
+                                  provider.startDate != null ? Icons.event_available_rounded : Icons.date_range_rounded,
+                                ),
+                                onPressed: () async {
+                                  final range = await showDateRangePicker(
+                                    context: context,
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                                    initialDateRange: provider.startDate != null && provider.endDate != null
+                                        ? DateTimeRange(start: provider.startDate!, end: provider.endDate!)
+                                        : null,
+                                  );
+                                  if (range != null) {
+                                    provider.setDateRange(range.start, range.end);
+                                  } else {
+                                    provider.setDateRange(null, null);
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -230,101 +273,12 @@ class HomeScreen extends StatelessWidget {
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
                             final t = list[index];
-                            final isIncome = t.type == TransactionType.income;
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Dismissible(
-                                key: ValueKey(t.id),
-                                direction: DismissDirection.endToStart,
-                                background: Container(
-                                  alignment: AlignmentDirectional.centerEnd,
-                                  padding:
-                                      const EdgeInsetsDirectional.only(end: 20),
-                                  decoration: BoxDecoration(
-                                    color: scheme.error,
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                  child: Icon(
-                                    Icons.delete_outline_rounded,
-                                    color: scheme.onError,
-                                    size: 28,
-                                  ),
-                                ),
-                                onDismissed: (_) => provider.remove(t.id),
-                                child: Material(
-                                  color: scheme.surfaceContainerLowest,
-                                  elevation: 0,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
-                                    side: BorderSide(
-                                      color: scheme.outlineVariant
-                                          .withValues(alpha: 0.5),
-                                    ),
-                                  ),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: ListTile(
-                                    leading: CircleAvatar(
-                                      radius: 22,
-                                      backgroundColor: isIncome
-                                          ? const Color(0xFFD1FAE5)
-                                          : const Color(0xFFFEE2E2),
-                                      foregroundColor: isIncome
-                                          ? const Color(0xFF047857)
-                                          : const Color(0xFFB91C1C),
-                                      child: Icon(
-                                        isIncome
-                                            ? Icons.arrow_downward_rounded
-                                            : Icons.arrow_upward_rounded,
-                                        size: 22,
-                                      ),
-                                    ),
-                                    title: Text(
-                                      t.displayTitle,
-                                      style: theme.textTheme.titleSmall
-                                          ?.copyWith(fontWeight: FontWeight.w600),
-                                    ),
-                                    subtitle: Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Text(
-                                        '${AppStrings.categoryName(t.category)} · ${_date.format(t.date)}',
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: scheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton.filledTonal(
-                                          visualDensity: VisualDensity.compact,
-                                          tooltip: AppStrings.editTooltip,
-                                          onPressed: () =>
-                                              _pushTransactionForm(
-                                            context,
-                                            initial: t,
-                                          ),
-                                          icon: const Icon(
-                                            Icons.edit_rounded,
-                                            size: 20,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          '${isIncome ? '+' : '-'}${_money.format(t.amount)}',
-                                          style: theme.textTheme.titleSmall
-                                              ?.copyWith(
-                                            fontWeight: FontWeight.w700,
-                                            color: isIncome
-                                                ? const Color(0xFF059669)
-                                                : scheme.error,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
+                            return TransactionTile(
+                              transaction: t,
+                              onDelete: () => provider.remove(t.id),
+                              onEdit: () => _pushTransactionForm(context, initial: t),
+                              dateFormat: _date,
+                              moneyFormat: _money,
                             );
                           },
                           childCount: list.length,
@@ -394,82 +348,6 @@ class _SyncBanner extends StatelessWidget {
   }
 }
 
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
-    required this.label,
-    required this.value,
-    required this.accent,
-    required this.icon,
-  });
-
-  final String label;
-  final String value;
-  final Color accent;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            accent.withValues(alpha: 0.14),
-            accent.withValues(alpha: 0.06),
-          ],
-        ),
-        border: Border.all(color: accent.withValues(alpha: 0.22)),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.12),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 18, color: accent),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.2,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.message});
